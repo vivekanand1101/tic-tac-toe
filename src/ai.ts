@@ -1,4 +1,5 @@
-import { legalMoves, minimax, status, type Board } from './game.js';
+import { requestJev } from './jev.js';
+import { legalMoves, status, type Board } from './game.js';
 export interface MoveChooser { choose(board: Board, legal: readonly number[]): Promise<number> }
 export const MOVE_INSTRUCTIONS = `You play O and it is your turn. X is the opponent. Either player may have started.
 A win is three identical marks in a row, column, or diagonal. Empty cells are null.
@@ -44,28 +45,11 @@ export function buildJevRequest(board: Board, legal: readonly number[], model: s
   };
 }
 export class JevChooser implements MoveChooser {
-  constructor(private readonly apiKey: string, private readonly model = 'jev-latest', private readonly fetcher: typeof fetch = fetch) {}
+  constructor(private readonly apiKey: string, private readonly model = 'jev-latest', private readonly fetcher: typeof fetch = fetch, private readonly signal?: AbortSignal) {}
   async choose(board: Board, legal: readonly number[]): Promise<number> {
-    const response = await this.fetcher('https://api.typesafe.ai/v1/systemone', {
-      method: 'POST', redirect: 'error', signal: AbortSignal.timeout(3000),
-      headers: { Authorization: `Bearer ${this.apiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(buildJevRequest(board, legal, this.model))
-    });
-    if (!response.ok) throw new Error('Jev request failed.');
-    const body: unknown = await response.json();
+    const body = await requestJev(this.apiKey, buildJevRequest(board, legal, this.model), this.signal, this.fetcher);
     const choice = (body as { answers?: { move?: { type?: unknown; choice?: unknown } } } | null)?.answers?.move;
     if (choice?.type !== 'choice' || typeof choice.choice !== 'string' || !legal.some(i => String(i) === choice.choice)) throw new Error('Invalid Jev choice.');
     return Number(choice.choice);
   }
-}
-export async function chooseMove(board: Board, chooser?: MoveChooser): Promise<{ move: number; provider: 'jev' | 'minimax'; fallback: boolean }> {
-  if (chooser) {
-    try {
-      const legal = legalMoves(board);
-      const move = await chooser.choose(Object.freeze([...board]), Object.freeze(legal));
-      if (!Number.isInteger(move) || !legal.includes(move)) throw new Error('Illegal move.');
-      return { move, provider: 'jev', fallback: false };
-    } catch { return { move: minimax(board), provider: 'minimax', fallback: true }; }
-  }
-  return { move: minimax(board), provider: 'minimax', fallback: false };
 }

@@ -1,41 +1,43 @@
-# Tic-tac-toe
+# Cross & Circle — Tic-tac-toe
 
-A browser game and stateless Express API. You play X; the AI plays O. Minimax works offline, with optional Jev decisions and a minimax fallback. No database is needed.
+Play tic-tac-toe against Jev with **your own Jev API key**, or use the free, unbeatable local AI.
 
-## Run
+Open the game, enter your key, and select **Save key & play**. The key stays in this tab by default. **Remember on this device** optionally saves it in this browser; **Key settings** lets you replace or clear it. Never use a personal key on an untrusted site or device. Jev usage is charged to the key's owner according to their provider plan.
 
-Use Node.js 24 LTS (see `.nvmrc`; Node 22.9+ also works).
+The game sends each move through a small same-origin API to avoid Jev's browser CORS restriction. That API forwards the player's key to Jev for that request only; it does not persist it. No owner key or server secret is configured or required. **Play with local AI** makes no AI API requests.
+
+## Run locally
+
+Use Node 24 LTS (Node 22.9+ supported).
 
 ```sh
 npm ci --ignore-scripts
-npm run build
-npm start
+npm run dev
 ```
 
-Open http://127.0.0.1:3039. Choose a square or let the AI start. The server binds only to your computer. `npm run dev` starts the development watcher; `npm test` builds and runs the tests.
+Open http://127.0.0.1:3039. No `.env` file is needed. Local preview and web deployment both ask players for their own keys. The preview never reads keys from another project or from environment variables.
 
-For Jev, copy `.env.example` to `.env`, set `TYPESAFE_API_KEY`, and restart. `.env` loads automatically. `JEV_API_KEY` is an alias, `JEV_MODEL` defaults to `jev-latest`, and `PORT` defaults to `3039`. No key is included. Provider requests may incur costs; without a key the game makes no external API calls.
-
-## API
-
-`GET /health` returns `{"status":"ok","provider":"minimax"}` without a Jev key, or provider `jev` when configured.
+## Deploy on Cloudflare Workers Free
 
 ```sh
-curl http://127.0.0.1:3039/api/move \
-  -H 'Content-Type: application/json' \
-  -d '{"board":["X",null,null,null,null,null,null,null,null]}'
+npm ci --ignore-scripts
+npm run deploy:check
+npx wrangler login
+npm run deploy
 ```
 
-With minimax the exact response is:
+Use the Free plan and its provided `workers.dev` address. Do **not** upload a `JEV_API_KEY` secret: the app deliberately ignores server environment keys. `wrangler.jsonc` packages static assets with the board-only API, using no database or dedicated server. It applies an approximate 12-moves/minute per-IP limit at each Cloudflare location.
 
-```json
-{"move":4,"provider":"minimax","fallback":false,"board":["X",null,null,null,"O",null,null,null,null],"status":"in_progress","nextPlayer":"X"}
-```
+Cloudflare currently provides unlimited free static asset requests and 100,000 Worker requests/day on its Free plan, subject to CPU and other platform limits. Hosting can remain free within those limits. Jev inference is separate and uses each player's own credits. Local AI has no API cost.
 
-Use a flat nine-cell board (`X`, `O`, or null), indexed in row-major order. Include `startingPlayer: "O"` throughout an AI-first round. Validation rejects unreachable boards, invalid symbols, and wrong turns. Terminal boards return `move: null`. Status is `in_progress`, `X_wins`, `O_wins`, or `draw`.
+The live deployment can also be published with the connected Sites workflow. `scripts/prepare-sites.mjs` bundles the same browser assets and board-only API into the Sites Worker ESM starter at `.sites/tic-tac-toe/worker/index.js`. The Sites checkout is separate from this source repository and contains no runtime keys. It requires no database, storage binding, or owner secret.
 
-Invalid boards/JSON return 400, wrong content type 415, bodies above 4kb 413, and request limits 429. At most 60 API requests per minute and two in flight are allowed per process. Foreign browser origins and Host names are rejected with 403.
+References: [Workers pricing](https://developers.cloudflare.com/workers/platform/pricing/), [static assets](https://developers.cloudflare.com/workers/static-assets/), [rate limiting](https://developers.cloudflare.com/workers/runtime-apis/bindings/rate-limit/).
 
-The Jev adapter calls a fixed HTTPS endpoint and validates the selected move. Provider errors, invalid choices, or its three-second timeout fall back to minimax. Tests use mocked provider responses; recovery verification made no paid API calls. Only minimax guarantees optimal play.
+## Static-only hosting
 
-See `SECURITY.md` for local security assumptions and `RECOVERY.md` for recovery details.
+`npm run build` produces `dist/`. Uploading that folder to a static host supports local AI. Personal keys on a static-only host call Jev directly and require its CORS permission. Use the Worker deployment above for browser-independent Jev connectivity.
+
+## Checks
+
+`npm test` checks game rules, minimax, credential storage/cancellation, per-player key isolation, request validation, upstream errors and redaction, and Worker routing. Tests mock Jev. `npm run deploy:check` validates deployment packaging without publishing. See `SECURITY.md` for key-storage details.
