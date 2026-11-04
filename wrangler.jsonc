@@ -3,15 +3,37 @@
   "main": "server/worker.mjs",
   "compatibility_date": "2026-11-04",
   "workers_dev": true,
-  "build": { "command": "npm run build" },
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
-    "run_worker_first": ["/api/*"]
+    "run_worker_first": [
+      "/api/*",
+      "/slops/tic-tac-toe",
+      "/slops/tic-tac-toe/*"
+    ]
   },
-  "ratelimits": [{
-    "name": "MOVE_LIMITER",
-    "namespace_id": "1001",
-    "simple": { "limit": 12, "period": 60 }
-  }]
+  "ratelimits": [
+    {
+      "name": "MOVE_LIMITER",
+      "namespace_id": "1001",
+      "simple": {
+        "limit": 12,
+        "period": 60
+      }
+    }
+  ],
+  "account_id": "21edc7b0d85faf89cdb8681cbc09af54",
+  "routes": [
+    {
+      "pattern": "anandvivek.in/slops/tic-tac-toe",
+      "zone_name": "anandvivek.in"
+    },
+    {
+      "pattern": "anandvivek.in/slops/tic-tac-toe/*",
+      "zone_name": "anandvivek.in"
+    }
+  ]
 }

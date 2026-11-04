@@ -56,3 +56,24 @@ test('Worker serves static assets and API routes separately', async () => {
   const response = await worker.fetch(new Request('https://game.example/'), { ASSETS: { fetch: async () => new Response('game') } });
   assert.equal(await response.text(), 'game');
 });
+test('personal-site path redirects to a directory and maps assets and API to the same game', async () => {
+  const base = 'https://anandvivek.in/slops/tic-tac-toe';
+  const redirect = await worker.fetch(new Request(base + '?round=1'), {});
+  assert.equal(redirect.status, 308);
+  assert.equal(redirect.headers.get('Location'), base + '/?round=1');
+  for (const path of ['/', '/game.js', '/modules/play.js']) {
+    const response = await worker.fetch(new Request(base + path), { ASSETS: { fetch: async request => {
+      assert.equal(new URL(request.url).pathname, path);
+      assert.equal(new URL(request.url).origin, 'https://anandvivek.in');
+      return new Response('game asset');
+    } } });
+    assert.equal(await response.text(), 'game asset');
+  }
+  const config = await worker.fetch(new Request(base + '/api/config'), {});
+  assert.deepEqual(await config.json(), { jevProxy: true });
+  const missingKey = await worker.fetch(new Request(base + '/api/play', {
+    method: 'POST', headers: { Origin: 'https://anandvivek.in', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ board, startingPlayer: 'X' })
+  }), {});
+  assert.equal(missingKey.status, 401);
+});
