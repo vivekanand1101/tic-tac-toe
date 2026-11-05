@@ -22,7 +22,7 @@ export function mountKeySettings({onChange = () => {}, onOpen = () => {}, offlin
   document.body.append(host);
   const get = id => host.querySelector('#'+id), dialog = get('key-dialog'), input = get('jev-key'), feedback = get('key-feedback');
   let cachingWorked = true;
-  const summarize = () => { get('key-summary').textContent = store.key ? (cachingWorked ? store.remembered ? 'Jev key remembered on this device' : 'Jev key saved for this tab' : 'Jev key available for this page only; browser storage unavailable') : 'Local AI — no API cost'; };
+  const summarize = () => { get('key-summary').textContent = store.key ? (cachingWorked ? store.remembered ? 'Jev key remembered on this device' : 'Jev key saved for this tab' : 'Jev key available for this page only; browser storage unavailable') : 'Built-in browser opponent · no key or API calls'; };
   const close = () => { input.value = ''; input.type = 'password'; get('key-show').textContent = 'Show'; dialog.close(); };
   const open = () => { input.type = 'password'; get('key-show').textContent = 'Show'; store.cancel(); onOpen(); input.value = ''; input.required = !store.key; get('key-remember').checked = store.remembered; feedback.textContent = store.key ? 'A key is saved. Paste a new one to replace it.' : ''; get('key-clear').disabled = !store.key; get('key-cancel').hidden = !store.key; dialog.showModal(); input.focus(); };
   get('key-offline').textContent = offlineLabel;

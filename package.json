@@ -12,7 +12,8 @@
     "dev": "npm run build && npm start",
     "test": "npm run build && node --test test/*.test.mjs",
     "deploy": "wrangler deploy",
-    "deploy:check": "wrangler deploy --dry-run --outdir .wrangler/deploy"
+    "deploy:check": "wrangler deploy --dry-run --outdir .wrangler/deploy",
+    "sync:website": "npm run build && node scripts/sync-website.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",

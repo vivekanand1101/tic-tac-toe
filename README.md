@@ -1,12 +1,12 @@
 # Cross & Circle — Tic-tac-toe
 
-Play tic-tac-toe against Jev with **your own Jev API key**, or use the free, unbeatable local AI.
+Play tic-tac-toe against Jev with **your own Jev API key**, or use the built-in browser opponent. No key or API calls are needed for that mode.
 
 Live: [anandvivek.in/slops/tic-tac-toe](https://anandvivek.in/slops/tic-tac-toe/) · [Cloudflare Workers](https://tic-tac-toe.vivekanand1101.workers.dev)
 
 Open the game, enter your key, and select **Save key & play**. The key stays in this tab by default. **Remember on this device** optionally saves it in this browser; **Key settings** lets you replace or clear it. Never use a personal key on an untrusted site or device. Jev usage is charged to the key's owner according to their provider plan.
 
-The game sends each move through a small same-origin API to avoid Jev's browser CORS restriction. That API forwards the player's key to Jev for that request only; it does not persist it. No owner key or server secret is configured or required. **Play with local AI** makes no AI API requests.
+The game sends each move through a small same-origin API to avoid Jev's browser CORS restriction. That API forwards the player's key to Jev for that request only; it does not persist it. No owner key or server secret is configured or required. **Play without a key** uses the built-in browser opponent and makes no AI API requests.
 
 ## Run locally
 
@@ -28,7 +28,7 @@ npx wrangler login
 npm run deploy
 ```
 
-The checked-in configuration targets the owner’s Cloudflare account and the `anandvivek.in/slops/tic-tac-toe` routes. When deploying a fork, replace `account_id` with your own and remove or update `routes`. The Worker normalizes this path so relative game assets and API calls work there and at the `workers.dev` root. The personal website remains hosted by Pages; these Worker routes serve only the game path.
+The checked-in configuration targets the owner’s Cloudflare account and the `anandvivek.in/slops/tic-tac-toe` routes. When deploying a fork, replace `account_id` with your own and remove or update `routes`. The Worker normalizes this path so relative game assets and API calls work there and at the `workers.dev` root. The personal website remains hosted by Pages; these Worker routes serve only the game path. Its source also includes the static game files, so Pages can serve the game entry point instead of falling back to the home app’s 404. Before publishing game changes, run `npm run sync:website -- /path/to/website-source`, then commit and publish the website’s `public/slops/tic-tac-toe/` files.
 
 Use the Free plan and its provided `workers.dev` address. Do **not** upload a `JEV_API_KEY` secret: the app deliberately ignores server environment keys. `wrangler.jsonc` packages static assets with the board-only API, using no database or dedicated server. It applies an approximate 12-moves/minute per-IP limit at each Cloudflare location.
 

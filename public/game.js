@@ -16,5 +16,5 @@ async function playHosted(board,startingPlayer,key,signal){
  const response=await fetch('./api/play',{method:'POST',headers:{'Content-Type':'application/json',Authorization:`Bearer ${key}`} ,body:JSON.stringify({board,startingPlayer}),signal});
  const data=await response.json();if(!response.ok)throw new Error(data.error||'Jev is unavailable. Try again.');return data;
 }
-keys=mountKeySettings({jevProxy,offlineLabel:'Play with local AI',onOpen:()=>newRound('X',false),onChange:()=>{updateProvider();newRound('X',false);}});
+keys=mountKeySettings({jevProxy,offlineLabel:'Play without a key',onOpen:()=>newRound('X',false),onChange:()=>{updateProvider();newRound('X',false);}});
 updateProvider();render();
