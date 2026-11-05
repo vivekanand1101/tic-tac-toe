@@ -98,3 +98,75 @@ test('Worker rejects untrusted browser origins without forwarding any key', asyn
   assert.equal(response.status, 403);
   assert.equal(response.headers.get('Access-Control-Allow-Origin'), null);
 });
+test('ingress limits include missing-key requests before processing their bodies', async () => {
+  let checked = false;
+  const req = request({}, { Authorization: '', 'CF-Connecting-IP': '192.0.2.15' });
+  const response = await handleApi(req, { REQUEST_LIMITER: { limit: async ({key}) => {
+    checked = true;assert.equal(key, 'tic-tac-toe:request:192.0.2.15');return {success:false};
+  } } }, () => assert.fail('must not call Jev'));
+  assert.equal(response.status, 429);
+  assert.equal(checked, true);
+  assert.equal(req.bodyUsed, false);
+  assert.equal(response.headers.get('Retry-After'), '60');
+});
+
+test('move limits run before the body, and key limits use only a stable key hash', async () => {
+  const blocked = request();
+  assert.equal((await handleApi(blocked, { MOVE_LIMITER: { limit: async () => ({ success: false }) } })).status, 429);
+  assert.equal(blocked.bodyUsed, false);
+  const keys = [];
+  for (const ip of ['192.0.2.1', '192.0.2.2']) {
+    const req = request(undefined, { 'CF-Connecting-IP': ip });
+    const response = await handleApi(req, { KEY_LIMITER: { limit: async ({ key }) => {
+      keys.push(key);
+      assert.match(key, /^tic-tac-toe:key:[a-f0-9]{64}$/);
+      assert.equal(key.includes('player-key'), false);
+      return { success: false };
+    } } }, () => assert.fail('must not call Jev'));
+    assert.equal(response.status, 429);
+    assert.equal(req.bodyUsed, false);
+  }
+  assert.equal(keys[0], keys[1]);
+});
+
+test('limiter failures or missing production bindings reject requests without calling Jev', async () => {
+  for (const env of [
+    { REQUIRE_LIMITS: 'true' },
+    { REQUEST_LIMITER: { limit: async () => { throw Error('private details'); } } },
+    { MOVE_LIMITER: { limit: async () => undefined } },
+    { KEY_LIMITER: { limit: async () => { throw Error('player-key'); } } }
+  ]) {
+    const req = request();
+    const response = await handleApi(req, env, () => assert.fail('must not call Jev'));
+    assert.equal(response.status, 503);
+    assert.equal(req.bodyUsed, false);
+    assert.equal((await response.text()).includes('player-key'), false);
+  }
+});
+
+test('ingress limiting covers preflights and unknown routes with readable CORS errors', async () => {
+  for (const req of [
+    new Request('https://game.example/api/play', { method: 'OPTIONS', headers: {
+      Origin: 'https://anandvivek.in', 'Access-Control-Request-Method': 'POST'
+    } }),
+    new Request('https://game.example/api/unknown', { headers: { Origin: 'https://anandvivek.in' } })
+  ]) {
+    const response = await handleApi(req, { REQUEST_LIMITER: { limit: async () => ({ success: false }) } });
+    assert.equal(response.status, 429);
+    assert.equal(response.headers.get('Access-Control-Allow-Origin'), 'https://anandvivek.in');
+  }
+});
+
+test('announced oversized and stalled bodies never reach Jev', async () => {
+  const oversized = request(undefined, { 'Content-Length': '1000000' });
+  assert.equal((await handleApi(oversized, {}, () => assert.fail('must not call Jev'))).status, 413);
+  assert.equal(oversized.bodyUsed, false);
+  let cancelled = false;
+  const slow = new Request('https://game.example/api/play', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer fake-key' },
+    body: new ReadableStream({ cancel() { cancelled = true; } }), duplex: 'half'
+  });
+  const response = await handleApi(slow, {}, () => assert.fail('must not call Jev'));
+  assert.equal(response.status, 408);
+  assert.equal(cancelled, true);
+});
