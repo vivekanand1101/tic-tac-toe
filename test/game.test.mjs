@@ -1,12 +1,10 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {playBoard} from '../dist/modules/play.js';
-import {status,minimax,legalMoves,validateBoard} from '../dist/modules/game.js';
+import {status,validateBoard} from '../dist/modules/game.js';
 import {buildJevRequest} from '../dist/modules/ai.js';
-test('local AI wins immediately and blocks threats with exact board results',async()=>{
- for(const board of [['O','O',null,'X','X',null,'X',null,null],['X','X',null,null,'O',null,null,null,null]]){
- const expected=[...board];expected[2]='O';assert.deepEqual(await playBoard(board,'X'),{move:2,board:expected,status:status(expected),nextPlayer:status(expected)==='in_progress'?'X':null,provider:'minimax',fallback:false});
- }
+test('AI moves require a player key and never substitute a browser opponent',async()=>{
+ await assert.rejects(playBoard(['X',null,null,null,null,null,null,null,null],'X','',undefined,async()=>assert.fail('must not fetch without a key')),{message:'Add your Jev API key in Key settings.'});
 });
 test('invalid, unreachable and wrong-turn boards are rejected',()=>{
  for(const input of [[],Array(9).fill(null),['x',null,null,null,null,null,null,null,null],['X','X','X','O','O','O',null,null,null],['X','X','X','O','O',null,'O',null,null]])assert.throws(()=>validateBoard(input));
@@ -17,9 +15,10 @@ test('terminal boards never call Jev',async()=>{
  assert.deepEqual(await playBoard(board,'X','sample-key',undefined,async()=>assert.fail('must not fetch')),{board,status:result,nextPlayer:null,move:null,provider:null,fallback:false});
  }
 });
-test('human-first and AI-first rounds run entirely in the browser',async()=>{
- assert.deepEqual(await playBoard(['X',null,null,null,null,null,null,null,null],'X'),{board:['X',null,null,null,'O',null,null,null,null],move:4,status:'in_progress',nextPlayer:'X',provider:'minimax',fallback:false});
- assert.deepEqual(await playBoard(Array(9).fill(null),'O'),{board:['O',null,null,null,null,null,null,null,null],move:0,status:'in_progress',nextPlayer:'X',provider:'minimax',fallback:false});
+test('human-first and Jev-first rounds both use the Jev chooser',async()=>{
+ const choose=move=>async()=>Response.json({answers:{move:{type:'choice',choice:String(move)}}});
+ assert.deepEqual(await playBoard(['X',null,null,null,null,null,null,null,null],'X','sample-key',undefined,choose(4)),{board:['X',null,null,null,'O',null,null,null,null],move:4,status:'in_progress',nextPlayer:'X',provider:'jev',fallback:false});
+ assert.deepEqual(await playBoard(Array(9).fill(null),'O','sample-key',undefined,choose(0)),{board:['O',null,null,null,null,null,null,null,null],move:0,status:'in_progress',nextPlayer:'X',provider:'jev',fallback:false});
 });
 test('Jev choice uses direct request with exact legal squares and no silent fallback',async()=>{
  const board=['X',null,null,null,null,null,null,null,null];
@@ -28,9 +27,6 @@ test('Jev choice uses direct request with exact legal squares and no silent fall
  });assert.deepEqual(response,{board:['X',null,null,null,'O',null,null,null,null],move:4,status:'in_progress',nextPlayer:'X',provider:'jev',fallback:false});
  await assert.rejects(playBoard(board,'X','sample-key',undefined,async()=>Response.json({answers:{move:{type:'choice',choice:'0'}}})),{message:'Invalid Jev choice.'});
  await assert.rejects(playBoard(board,'X','sample-key',undefined,async()=>new Response('',{status:401})),{message:'Jev rejected this key. Update it in Key settings.'});
-});
-test('minimax never loses to any sequence of human moves',()=>{
- function play(board){const current=status(board);assert.notEqual(current,'X_wins');if(current!=='in_progress')return;for(const move of legalMoves(board)){const next=[...board];next[move]='X';assert.notEqual(status(next),'X_wins');if(status(next)==='in_progress'){next[minimax(next)]='O';play(next)}}}play(Array(9).fill(null));
 });
 test('Jev receives immediate win and threat facts',()=>{
  const win=buildJevRequest(['O','O',null,'X','X',null,'X',null,null],[2,5,7,8],'jev-latest');assert.equal(win.questions.move.criteria['2'].winsNow,true);assert.deepEqual(win.questions.move.criteria['2'].immediateWinningRepliesForX,[]);

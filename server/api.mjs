@@ -58,6 +58,6 @@ async function routeApi(request, env, fetcher) {
     if (error?.message === 'Jev rejected this key. Update it in Key settings.') return json({ error: error.message }, 401);
     if (error?.message === 'Jev rate limit reached. Wait before trying again.') return json({ error: error.message }, 429);
     // Never expose upstream bodies, environment values, or exception details.
-    return json({ error: 'Jev could not choose a move. Retry, or choose local AI in Key settings.' }, 502);
+    return json({ error: 'Jev could not choose a move. Please try again.' }, 502);
   }
 }

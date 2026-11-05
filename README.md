@@ -1,12 +1,12 @@
 # Cross & Circle — Tic-tac-toe
 
-Play tic-tac-toe against Jev with **your own Jev API key**, or use the built-in browser opponent. No key or API calls are needed for that mode.
+Play tic-tac-toe against Jev with **your own Jev API key**. Every AI move is chosen by Jev; a key is required to play.
 
 Live: [anandvivek.in/slops/tic-tac-toe](https://anandvivek.in/slops/tic-tac-toe/) · [Cloudflare Workers](https://tic-tac-toe.vivekanand1101.workers.dev)
 
 Open the game, enter your key, and select **Save key & play**. The key stays in this tab by default. **Remember on this device** optionally saves it in this browser; **Key settings** lets you replace or clear it. Never use a personal key on an untrusted site or device. Jev usage is charged to the key's owner according to their provider plan.
 
-The game sends Jev moves through the hosted game API. On anandvivek.in it calls the dedicated Cloudflare Worker directly, so a missing Pages API route cannot switch the browser to Jev. That API forwards the player's key to Jev for that request only; it does not persist it. No owner key or server secret is configured or required. **Play without a key** uses the built-in browser opponent and makes no AI API requests.
+The game sends Jev moves through the hosted game API. On anandvivek.in it calls the dedicated Cloudflare Worker directly, so a missing Pages API route cannot switch the browser to Jev. That API forwards the player's key to Jev for that request only; it does not persist it. No owner key or server secret is configured or required.
 
 ## Run locally
 
@@ -17,7 +17,7 @@ npm ci --ignore-scripts
 npm run dev
 ```
 
-Open http://127.0.0.1:3039. No `.env` file is needed. Local preview and web deployment both ask players for their own keys. When Jev rejects a key as invalid or expired, the frontend clears it and reopens the key dialog; the player can enter a replacement or choose the built-in opponent. The preview never reads keys from another project or from environment variables.
+Open http://127.0.0.1:3039. No `.env` file is needed. Local preview and web deployment both ask players for their own keys. When Jev rejects a key as invalid or expired, the frontend clears it and reopens the key dialog; the player must enter a replacement before continuing. The preview never reads keys from another project or from environment variables.
 
 ## Deploy on Cloudflare Workers Free
 
@@ -32,7 +32,7 @@ The checked-in configuration targets the owner’s Cloudflare account and the `a
 
 Use the Free plan and its provided `workers.dev` address. Do **not** upload a `JEV_API_KEY` secret: the app deliberately ignores server environment keys. `wrangler.jsonc` packages static assets with the board-only API, using no database or dedicated server. It applies an approximate 12-moves/minute per-IP limit at each Cloudflare location.
 
-Cloudflare currently provides unlimited free static asset requests and 100,000 Worker requests/day on its Free plan, subject to CPU and other platform limits. Hosting can remain free within those limits. Jev inference is separate and uses each player's own credits. Local AI has no API cost.
+Cloudflare currently provides unlimited free static asset requests and 100,000 Worker requests/day on its Free plan, subject to CPU and other platform limits. Hosting can remain free within those limits. Jev inference is separate and uses each player's own credits.
 
 The live deployment can also be published with the connected Sites workflow. `scripts/prepare-sites.mjs` bundles the same browser assets and board-only API into the Sites Worker ESM starter at `.sites/tic-tac-toe/worker/index.js`. The Sites checkout is separate from this source repository and contains no runtime keys. It requires no database, storage binding, or owner secret.
 
@@ -40,8 +40,8 @@ References: [Workers pricing](https://developers.cloudflare.com/workers/platform
 
 ## Static-only hosting
 
-`npm run build` produces `dist/`. Uploading that folder to a static host supports local AI. Jev play requires the game API. The personal site uses its dedicated Worker endpoint with an explicit allowed origin. Other static hosts must configure their own game API; the frontend never falls back to calling Jev directly.
+`npm run build` produces `dist/`. The static frontend requires the game API for all AI moves. The personal site uses its dedicated Worker endpoint with an explicit allowed origin. Other static hosts must configure their own game API; the frontend never falls back to calling Jev directly.
 
 ## Checks
 
-`npm test` checks game rules, minimax, credential storage/cancellation, per-player key isolation, request validation, upstream errors and redaction, and Worker routing. Tests mock Jev. `npm run deploy:check` validates deployment packaging without publishing. See `SECURITY.md` for key-storage details.
+`npm test` checks game rules, required player keys, credential storage/cancellation, per-player key isolation, request validation, upstream errors and redaction, and Worker routing. Tests mock Jev. `npm run deploy:check` validates deployment packaging without publishing. See `SECURITY.md` for key-storage details.

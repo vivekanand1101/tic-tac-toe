@@ -6,7 +6,7 @@ In the Worker deployment, the browser sends the player's key in an Authorization
 
 Browser keys use sessionStorage by default, or localStorage when the player selects Remember. Storage is not encrypted secret storage; same-origin scripts, extensions, or anyone with access to the profile may read it. Use personal, revocable keys on a trusted, dedicated origin. Settings clears the password input on close. Opening settings or replacing/clearing keys cancels pending browser requests and stale results cannot update the board.
 
-Static-only hosting supports the built-in opponent. Jev play requires the game Worker; the frontend never falls back to direct browser calls to Jev. Missing or rejected keys cause the frontend to reopen the key dialog and clear the rejected cached key. Choosing local AI makes no AI API requests. Neither deployment mode supplies free Jev credits; each player's usage belongs to their own key.
+All AI moves require the player’s Jev key and the game Worker; the frontend never falls back to direct browser calls to Jev. Missing or rejected keys cause the frontend to reopen the key dialog and clear the rejected cached key. Neither deployment mode supplies free Jev credits; each player's usage belongs to their own key.
 
 The local preview binds only to 127.0.0.1 and validates Host. The direct Cloudflare configuration adds an approximate 12-moves/minute per-IP rate limit per location; the Sites artifact does not require that binding. Rate limits are not authentication or a spending cap. No general-purpose AI proxy is exposed.
 
