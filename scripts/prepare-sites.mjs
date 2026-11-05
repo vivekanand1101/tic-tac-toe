@@ -4,7 +4,7 @@ import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 const destination = resolve('.sites/tic-tac-toe/worker/index.js');
 const assets = {};
-const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8' };
+const types = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.svg': 'image/svg+xml' };
 async function collect(directory, prefix = '') {
   for (const file of await readdir(directory, { withFileTypes: true })) {
     if (file.name.startsWith('_') || file.name.startsWith('.')) continue;

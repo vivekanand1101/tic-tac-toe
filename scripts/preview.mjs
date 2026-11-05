@@ -8,7 +8,7 @@ const env={};
 const root=resolve('dist');
 const port=Number(process.env.PORT || 3039);
 if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid PORT');
-const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.png':'image/png','.json':'application/json'};
+const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.json':'application/json'};
 http.createServer(async(req,res)=>{
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
  res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.typesafe.ai; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
