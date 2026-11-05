@@ -5,11 +5,30 @@ const json = (body, status = 200) => Response.json(body, { status, headers: { 'C
 
 // Both the loopback preview and the web Worker use this board-only API.
 export async function handleApi(request, env, fetcher = fetch) {
-  const { pathname, origin } = new URL(request.url);
+  const url = new URL(request.url);
+  const origin = request.headers.get('Origin');
+  const allowed = !origin || origin === url.origin || ['https://anandvivek.in', 'https://www.anandvivek.in'].includes(origin);
+  if (!allowed) return json({ error: 'Origin not allowed.' }, 403);
+  const cors = new Headers({ Vary: 'Origin' });
+  if (origin) cors.set('Access-Control-Allow-Origin', origin);
+  if (request.method === 'OPTIONS') {
+    if (url.pathname !== '/api/play' || request.headers.get('Access-Control-Request-Method') !== 'POST') return json({ error: 'Use POST.' }, 405);
+    cors.set('Access-Control-Allow-Methods', 'POST');
+    cors.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    cors.set('Access-Control-Max-Age', '600');
+    return new Response(null, { status: 204, headers: cors });
+  }
+  const response = await routeApi(request, env, fetcher);
+  const headers = new Headers(response.headers);
+  for (const [key, value] of cors) headers.set(key, value);
+  return new Response(response.body, { status: response.status, headers });
+}
+
+async function routeApi(request, env, fetcher) {
+  const { pathname } = new URL(request.url);
   if (pathname === '/api/config' && request.method === 'GET') return json({ jevProxy: true });
   if (pathname !== '/api/play') return json({ error: 'Not found.' }, 404);
   if (request.method !== 'POST') return json({ error: 'Use POST.' }, 405);
-  if (request.headers.get('Origin') && request.headers.get('Origin') !== origin) return json({ error: 'Origin not allowed.' }, 403);
   if (!request.headers.get('Content-Type')?.startsWith('application/json')) return json({ error: 'Use application/json.' }, 415);
   const authorization = request.headers.get('Authorization') || '';
   const apiKey = authorization.startsWith('Bearer ') ? authorization.slice(7) : '';

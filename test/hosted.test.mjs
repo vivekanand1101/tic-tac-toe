@@ -77,3 +77,24 @@ test('personal-site path redirects to a directory and maps assets and API to the
   }), {});
   assert.equal(missingKey.status, 401);
 });
+test('personal website can preflight the Worker API and read rejected-key responses', async () => {
+  const url = 'https://tic-tac-toe.vivekanand1101.workers.dev/api/play';
+  const origin = 'https://anandvivek.in';
+  const preflight = await worker.fetch(new Request(url, { method: 'OPTIONS', headers: {
+    Origin: origin, 'Access-Control-Request-Method': 'POST',
+    'Access-Control-Request-Headers': 'authorization,content-type'
+  } }), {});
+  assert.equal(preflight.status, 204);
+  assert.equal(preflight.headers.get('Access-Control-Allow-Origin'), origin);
+  assert.match(preflight.headers.get('Access-Control-Allow-Headers'), /Authorization/i);
+  const rejected = await worker.fetch(new Request(url, { method: 'POST', headers: {
+    Origin: origin, 'Content-Type': 'application/json'
+  }, body: '{}' }), {});
+  assert.equal(rejected.status, 401);
+  assert.equal(rejected.headers.get('Access-Control-Allow-Origin'), origin);
+});
+test('Worker rejects untrusted browser origins without forwarding any key', async () => {
+  const response = await handleApi(request(undefined, { Origin: 'https://untrusted.example' }), {}, () => assert.fail('must not call Jev'));
+  assert.equal(response.status, 403);
+  assert.equal(response.headers.get('Access-Control-Allow-Origin'), null);
+});

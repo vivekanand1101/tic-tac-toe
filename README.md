@@ -6,7 +6,7 @@ Live: [anandvivek.in/slops/tic-tac-toe](https://anandvivek.in/slops/tic-tac-toe/
 
 Open the game, enter your key, and select **Save key & play**. The key stays in this tab by default. **Remember on this device** optionally saves it in this browser; **Key settings** lets you replace or clear it. Never use a personal key on an untrusted site or device. Jev usage is charged to the key's owner according to their provider plan.
 
-The game sends each move through a small same-origin API to avoid Jev's browser CORS restriction. That API forwards the player's key to Jev for that request only; it does not persist it. No owner key or server secret is configured or required. **Play without a key** uses the built-in browser opponent and makes no AI API requests.
+The game sends Jev moves through the hosted game API. On anandvivek.in it calls the dedicated Cloudflare Worker directly, so a missing Pages API route cannot switch the browser to Jev. That API forwards the player's key to Jev for that request only; it does not persist it. No owner key or server secret is configured or required. **Play without a key** uses the built-in browser opponent and makes no AI API requests.
 
 ## Run locally
 
@@ -17,7 +17,7 @@ npm ci --ignore-scripts
 npm run dev
 ```
 
-Open http://127.0.0.1:3039. No `.env` file is needed. Local preview and web deployment both ask players for their own keys. The preview never reads keys from another project or from environment variables.
+Open http://127.0.0.1:3039. No `.env` file is needed. Local preview and web deployment both ask players for their own keys. When Jev rejects a key as invalid or expired, the frontend clears it and reopens the key dialog; the player can enter a replacement or choose the built-in opponent. The preview never reads keys from another project or from environment variables.
 
 ## Deploy on Cloudflare Workers Free
 
@@ -40,7 +40,7 @@ References: [Workers pricing](https://developers.cloudflare.com/workers/platform
 
 ## Static-only hosting
 
-`npm run build` produces `dist/`. Uploading that folder to a static host supports local AI. Personal keys on a static-only host call Jev directly and require its CORS permission. Use the Worker deployment above for browser-independent Jev connectivity.
+`npm run build` produces `dist/`. Uploading that folder to a static host supports local AI. Jev play requires the game API. The personal site uses its dedicated Worker endpoint with an explicit allowed origin. Other static hosts must configure their own game API; the frontend never falls back to calling Jev directly.
 
 ## Checks
 

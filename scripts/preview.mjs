@@ -11,7 +11,7 @@ if(!Number.isInteger(port)||port<1||port>65535)throw new Error('Invalid PORT');
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.svg':'image/svg+xml','.png':'image/png','.json':'application/json'};
 http.createServer(async(req,res)=>{
  res.setHeader('X-Content-Type-Options','nosniff');res.setHeader('Referrer-Policy','no-referrer');res.setHeader('X-Frame-Options','DENY');
- res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://api.typesafe.ai; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
+ res.setHeader('Content-Security-Policy',"default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https://tic-tac-toe.vivekanand1101.workers.dev; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'");
  if(!/^(localhost|127\.0\.0\.1)(:[0-9]{1,5})?$/.test(req.headers.host||'')){res.writeHead(403);res.end();return;}
  if(new URL(req.url,'http://localhost').pathname.startsWith('/api/')){
   try {

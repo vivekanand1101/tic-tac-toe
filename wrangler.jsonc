@@ -35,5 +35,8 @@
       "pattern": "anandvivek.in/slops/tic-tac-toe/*",
       "zone_name": "anandvivek.in"
     }
+  ],
+  "compatibility_flags": [
+    "enable_request_signal"
   ]
 }

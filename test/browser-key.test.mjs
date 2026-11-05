@@ -34,7 +34,7 @@ test('opening key settings cancels an existing request without forgetting the ke
 test('Jev is called directly with bearer auth and without cookies, referrers, or redirects',async()=>{
  const payload={model:'jev-latest',state:'sample',questions:{}};
  const response=await requestJev('sample-key',payload,undefined,async(url,options)=>{
- assert.equal(url,JEV_ENDPOINT);assert.equal(url,'https://api.typesafe.ai/v1/systemone');assert.equal(options.method,'POST');assert.equal(options.mode,'cors');assert.equal(options.credentials,'omit');assert.equal(options.redirect,'error');assert.equal(options.referrerPolicy,'no-referrer');assert.deepEqual(options.headers,{Authorization:'Bearer sample-key','Content-Type':'application/json'});assert.equal(options.body,JSON.stringify(payload));assert.equal(options.signal.aborted,false);
+ assert.equal(url,JEV_ENDPOINT);assert.equal(url,'https://api.typesafe.ai/v1/systemone');assert.equal(options.method,'POST');assert.equal(options.mode,'cors');assert.equal(options.credentials,'omit');assert.equal(options.redirect,'manual');assert.equal(options.referrerPolicy,'no-referrer');assert.deepEqual(options.headers,{Authorization:'Bearer sample-key','Content-Type':'application/json'});assert.equal(options.body,JSON.stringify(payload));assert.equal(options.signal.aborted,false);
  return Response.json({answers:{}});
  });assert.deepEqual(response,{answers:{}});
 });
@@ -52,4 +52,13 @@ test('no key makes no network request; cancellation is preserved',async()=>{
  await assert.rejects(requestJev('',{},undefined,async()=>assert.fail('must not fetch')),{message:'Add your Jev API key in Key settings.'});
  const controller=new AbortController();controller.abort();
  await assert.rejects(requestJev('sample-key',{},controller.signal,async()=>{throw Error('aborted')}),{name:'AbortError',message:'Request cancelled.'});
+});
+
+test('Jev redirects never forward the key to another destination',async()=>{
+ let calls=0;
+ await assert.rejects(requestJev('sample-key',{},undefined,async(url,options)=>{
+  calls++;assert.equal(url,JEV_ENDPOINT);assert.equal(options.redirect,'manual');
+  return new Response('',{status:307,headers:{Location:'https://untrusted.example/'}});
+ }),{message:'Jev returned an unexpected redirect. Try again later.'});
+ assert.equal(calls,1);
 });
